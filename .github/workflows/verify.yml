@@ -1,0 +1,88 @@
+# Solana Summer grader — Assignment 02, Escrow.
+#
+# SEALED. The submission checker compares this file's blob SHA against the
+# upstream copy. Editing it fails your submission before anything is read.
+#
+# It runs in YOUR fork, on YOUR free Actions minutes. Nothing here uploads
+# your source anywhere, and the site never executes it — it only reads the
+# result this job publishes.
+
+name: verify
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      CHALLENGE_ID: escrow-timelock
+      PROGRAM_SO: target/deploy/escrow.so
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Solana toolchain
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          avm install 1.0.2
+          avm use 1.0.2
+
+      # -- build the learner's program --------------------------------------
+      - name: anchor build
+        id: build
+        run: anchor build
+
+      # No mutant pack for this challenge yet. grade.py notices .mutants/ is
+      # absent, records mutation 0/0, and scores the canonical half only.
+
+      # -- grade -------------------------------------------------------------
+      - name: Grade
+        run: python3 grader/grade.py
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: solana-summer-result
+          path: result.json
+          if-no-files-found: error
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f result.json ]; then
+            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r = json.load(open("result.json"))
+          c, m = r["canonical"], r["mutation"]
+          print("## Solana Summer — " + r["challenge"])
+          print()
+          print(f"**Canonical suite:** {c['passed']}/{c['total']}")
+          if m["total"]:
+              print(f"**Mutants killed:** {m['killed']}/{m['total']}")
+          print()
+          if r["notes"]:
+              print("### Notes")
+              for n in r["notes"]:
+                  print(f"- {n}")
+          PY
+          fi
