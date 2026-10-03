@@ -47,9 +47,26 @@ jobs:
           avm use 1.0.2
 
       # -- build the learner's program --------------------------------------
+      #
+      # `anchor keys sync` first, and it is not optional.
+      #
+      # The repo declares a program id but does not ship its keypair (it is a
+      # private key — it must not be in a public repo). A fresh checkout has no
+      # target/, so `anchor build` generates a NEW random keypair and then
+      # refuses to continue because its pubkey does not match declare_id!.
+      # Every learner hits this, because it is a property of the checkout, not
+      # of their work.
+      #
+      # keys sync rewrites declare_id! and Anchor.toml to match the keypair
+      # that was just generated. Both changes are to CI's throwaway working
+      # copy — nothing is committed, so the sealed-file check is unaffected.
+      # The program id is arbitrary here anyway: LiteSVM loads the .so at
+      # whatever `escrow::id()` says.
       - name: anchor build
         id: build
-        run: anchor build
+        run: |
+          anchor keys sync
+          anchor build
 
       # No mutant pack for this challenge yet. grade.py notices .mutants/ is
       # absent, records mutation 0/0, and scores the canonical half only.

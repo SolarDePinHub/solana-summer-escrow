@@ -1,0 +1,27 @@
+{
+    "_comment": "SEALED. The starter's on-chain surface and learner test count, as it ships. grade.py diffs the built IDL against this. Names are compared case-insensitively with underscores stripped, so snake_case here matches the camelCase Anchor emits.",
+    "challenge": "escrow-timelock",
+    "instructions": [
+      "make",
+      "take",
+      "cancel"
+    ],
+    "accounts": {
+      "escrow": [
+        "maker",
+        "mint_a",
+        "mint_b",
+        "amount_a",
+        "amount_b",
+        "seed",
+        "bump"
+      ]
+    },
+    "errors": [
+      "CustomError"
+    ],
+    "_test_count_note": "test_make.rs 1 + test_cancel.rs 1. The tutorial asks for two more, so the bar is 4. canonical.rs is ours and sealed, so it is not counted here.",
+    "test_count": 2,
+    "new_tests_required": 2
+  }
+  
